@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Radiologie Zuständigkeit (CT/MR, BD/USB)</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background:#f6f7f9; color:#111; }
+    .wrap { max-width: 880px; margin: 24px auto; padding: 0 16px; }
+    .card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:18px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    h1 { font-size: 18px; margin: 0 0 10px; }
+    .muted { color:#555; font-size: 13px; line-height: 1.35; }
+    .step { margin-top: 14px; padding-top: 14px; border-top: 1px solid #eee; }
+    .row { display:flex; gap:12px; flex-wrap: wrap; align-items: end; }
+    label { display:block; font-size: 13px; color:#222; margin-bottom: 6px; }
+    select, input[type="date"], input[type="time"] {
+      width: 260px; max-width: 100%;
+      padding: 10px 12px; border-radius: 10px;
+      border: 1px solid #d1d5db; background:#fff; font-size: 14px;
+    }
+    button {
+      padding: 10px 14px; border: 0; border-radius: 10px;
+      background:#111827; color:#fff; font-size: 14px; cursor:pointer;
+    }
+    button.secondary { background:#6b7280; }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    .pill {
+      display:inline-block; padding: 6px 10px; border-radius: 999px;
+      background:#eef2ff; color:#1f2a7a; font-weight: 700; font-size: 13px;
+      border: 1px solid #dbe3ff;
+    }
+    .resultBox {
+      margin-top: 14px; padding: 14px; border-radius: 12px;
+      border: 1px solid #e5e7eb; background:#fafafa;
+    }
+    .resultTitle { font-weight: 800; font-size: 16px; margin: 0 0 6px; }
+    .warn { color:#7c2d12; background:#fff7ed; border-color:#fed7aa; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+    .small { font-size: 12px; color:#444; }
+    ul { margin: 8px 0 0 18px; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Wer ist zuständig für Rücksprache zum Befund?</h1>
+      <div class="muted">
+        Schrittweise Auswahl: Modalität → Standort → Akquisitionsdatum und -zeit.<br>
+        Ergebnis: <span class="pill">CT-OA</span> / <span class="pill">MR-Früh</span> / <span class="pill">MR-Spät</span> / <span class="pill">Konsil-Arzt</span> / <span class="pill">DNR-WE</span>
+      </div>
+
+      <div class="step" id="step1">
+        <div class="row">
+          <div>
+            <label for="modality">1) Modalität</label>
+            <select id="modality">
+              <option value="" selected disabled>Bitte auswählen…</option>
+              <option value="CT">CT</option>
+              <option value="MR">MR</option>
+            </select>
+          </div>
+          <div style="flex:1"></div>
+          <button id="toStep2" disabled>Weiter</button>
+        </div>
+      </div>
+
+      <div class="step hidden" id="step2">
+        <div class="row">
+          <div>
+            <label for="site">2) Standort (Akquisition)</label>
+            <select id="site">
+              <option value="" selected disabled>Bitte auswählen…</option>
+              <option value="BD">BD</option>
+              <option value="USB">USB</option>
+            </select>
+          </div>
+          <div style="flex:1"></div>
+          <button id="toStep3" disabled>Weiter</button>
+          <button class="secondary" id="back1">Zurück</button>
+        </div>
+      </div>
+
+      <div class="step hidden" id="step3">
+        <div class="row">
+          <div>
+            <label for="acqDate">3) Akquisitionsdatum</label>
+            <input id="acqDate" type="date" />
+          </div>
+          <div>
+            <label for="acqTime">4) Akquisitionsende</label>
+            <input id="acqTime" type="time" step="60" />
+          </div>
+          <div style="flex:1"></div>
+          <button id="compute" disabled>Ergebnis anzeigen</button>
+          <button class="secondary" id="back2">Zurück</button>
+        </div>
+
+        <div class="resultBox hidden" id="resultBox">
+          <div class="resultTitle" id="resultTitle"></div>
+          <div class="small" id="resultDetails"></div>
+          <div class="small" id="resultNotes"></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="row">
+          <button class="secondary" id="reset">Neu starten</button>
+        </div>
+        <div class="muted small" style="margin-top:10px;">
+          Implementierte Regeln:
+          <ul>
+            <li><span class="mono">CT</span>: Fr 16:31 bis So 16:00 = <span class="mono">DNR-WE</span>.</li>
+            <li><span class="mono">CT</span>: sonst CT-OA für 20:00–07:00 sowie 07:00–16:30. CT-Freigabe Spätdienst-Vortag 16:31–19:59 durch MR-Früh (Mo: Sonntagsfenster 16:00–19:59).</li>
+            <li><span class="mono">MR USB</span>: MR-Früh 06:45–12:30, MR-Spät 12:31–17:29, danach Konsil-Arzt (ab 17:30 bzw. vor 06:45).</li>
+            <li><span class="mono">MR BD</span>: MR-Spät 07:00–13:59, danach Konsil-Arzt (ab 14:00 bzw. vor 07:00).</li>
+            <li><span class="mono">Wochenende</span>: MR am Samstag wird als Konsil-Arzt geroutet.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function() {
+  const $ = (id) => document.getElementById(id);
+
+  const modality = $("modality");
+  const site = $("site");
+  const acqDate = $("acqDate");
+  const acqTime = $("acqTime");
+
+  const toStep2 = $("toStep2");
+  const toStep3 = $("toStep3");
+  const compute = $("compute");
+
+  const step2 = $("step2");
+  const step3 = $("step3");
+
+  const resultBox = $("resultBox");
+  const resultTitle = $("resultTitle");
+  const resultDetails = $("resultDetails");
+  const resultNotes = $("resultNotes");
+
+  function show(el) { el.classList.remove("hidden"); }
+  function hide(el) { el.classList.add("hidden"); }
+
+  function resetAll() {
+    modality.value = "";
+    site.value = "";
+    acqDate.value = "";
+    acqTime.value = "";
+    toStep2.disabled = true;
+    toStep3.disabled = true;
+    compute.disabled = true;
+    hide(step2);
+    hide(step3);
+    hide(resultBox);
+    resultBox.classList.remove("warn");
+  }
+
+  function toMin(hhmm) {
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  }
+  function fmtDow(d) {
+    const names = ["So","Mo","Di","Mi","Do","Fr","Sa"];
+    return names[d.getDay()];
+  }
+  function parseDateTime(dateStr, timeStr) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const [hh, mm] = timeStr.split(":").map(Number);
+    return new Date(y, m - 1, d, hh, mm, 0, 0);
+  }
+
+  // Weekend CT override window: Fri 16:31 -> Sun 16:00
+  function isCTWeekendWindow(dt) {
+    const dow = dt.getDay(); // 0=Sun ... 6=Sat
+    const t = dt.getHours() * 60 + dt.getMinutes();
+    const startFri = toMin("16:31");
+    const endSun = toMin("16:00");
+    if (dow === 5 && t >= startFri) return true; // Friday from 16:31
+    if (dow === 6) return true;                  // all Saturday
+    if (dow === 0 && t < endSun) return true;    // Sunday until 16:00 (exclusive)
+    return false;
+  }
+
+  function route(mod, loc, dt) {
+    const dow = dt.getDay();
+    const t = dt.getHours() * 60 + dt.getMinutes();
+
+    const CT_NIGHT_START = toMin("20:00");
+    const CT_NIGHT_END = toMin("07:00");
+    const CT_DAY_START = toMin("07:00");
+    const CT_DAY_END = toMin("16:30");
+    const CT_LATE_START = toMin("16:31");
+    const CT_LATE_END = toMin("19:59");
+    const CT_SUN_LATE_START = toMin("16:00");
+    const CT_SUN_LATE_END = toMin("19:59");
+
+    const MR_USB_EARLY_START = toMin("06:45");
+    const MR_USB_EARLY_END = toMin("12:30");
+    const MR_USB_LATE_START = toMin("12:31");
+    const MR_USB_LATE_END = toMin("17:29");
+    const MR_USB_KONSIL_START = toMin("17:30");
+
+    const MR_BD_SPAT_START = toMin("07:00");
+    const MR_BD_SPAT_END = toMin("13:59");
+    const MR_BD_KONSIL_START = toMin("14:00");
+
+    const out = { who: "", detail: "", note: "", warning: false };
+
+    if (mod === "CT") {
+      // Override first
+      if (isCTWeekendWindow(dt)) {
+        out.who = "DNR-WE";
+        out.detail = "CT-Zuständigkeit Fr 16:31 bis So 16:00.";
+        return out;
+      }
+
+      if (t >= CT_NIGHT_START || t <= CT_NIGHT_END) {
+        out.who = "CT-OA";
+        out.detail = "CT-Nachtfreigabe (20:00–07:00).";
+        return out;
+      }
+      if (t >= CT_DAY_START && t <= CT_DAY_END) {
+        out.who = "CT-OA";
+        out.detail = "CT Tagesgeschäft (07:00–16:30).";
+        return out;
+      }
+
+      // Sunday special after 16:00 (note: before 16:00 already handled by DNR-WE)
+      if (dow === 0 && t >= CT_SUN_LATE_START && t <= CT_SUN_LATE_END) {
+        out.who = "MR-Früh";
+        out.detail = "CT-Freigabe Sonntag 16:00–19:59 (für Montag MR-Früh).";
+        return out;
+      }
+
+      if (t >= CT_LATE_START && t <= CT_LATE_END) {
+        // Apply for Mon-Thu acquisitions (next day is Tue-Fri).
+        if (dow >= 1 && dow <= 4) {
+          out.who = "MR-Früh";
+          out.detail = "CT-Freigabe Spätdienst Vortag (16:31–19:59) durch MR-Früh am Folgetag.";
+          return out;
+        }
+        out.who = "Unklar";
+        out.detail = "CT 16:31–19:59 ist für diesen Wochentag nicht eindeutig geregelt (außer Fr->So via DNR-WE).";
+        out.warning = true;
+        return out;
+      }
+
+      out.who = "Unklar";
+      out.detail = "Zeitfenster für CT passt zu keiner Regel (bitte prüfen).";
+      out.warning = true;
+      return out;
+    }
+
+    if (mod === "MR") {
+      if (dow === 6) {
+        out.who = "Konsil-Arzt";
+        out.detail = "MRI Samstag (laut Regel).";
+        return out;
+      }
+
+      if (loc === "USB") {
+        if (t >= MR_USB_EARLY_START && t <= MR_USB_EARLY_END) {
+          out.who = "MR-Früh";
+          out.detail = "MRI USB 06:45–12:30.";
+          return out;
+        }
+        if (t >= MR_USB_LATE_START && t <= MR_USB_LATE_END) {
+          out.who = "MR-Spät";
+          out.detail = "MRI USB 12:31–17:29.";
+          return out;
+        }
+        if (t >= MR_USB_KONSIL_START || t < MR_USB_EARLY_START) {
+          out.who = "Konsil-Arzt";
+          out.detail = "MRI USB ab 17:30 (Vortag) bzw. vor 06:45.";
+          return out;
+        }
+      }
+
+      if (loc === "BD") {
+        if (t >= MR_BD_SPAT_START && t <= MR_BD_SPAT_END) {
+          out.who = "MR-Spät";
+          out.detail = "MRI BD 07:00–13:59.";
+          return out;
+        }
+        if (t >= MR_BD_KONSIL_START || t < MR_BD_SPAT_START) {
+          out.who = "Konsil-Arzt";
+          out.detail = "MRI BD ab 14:00 (Vortag) bzw. vor 07:00.";
+          return out;
+        }
+      }
+
+      out.who = "Unklar";
+      out.detail = "Zeitfenster für MR passt zu keiner Regel (bitte prüfen).";
+      out.warning = true;
+      return out;
+    }
+
+    out.who = "Unklar";
+    out.detail = "Modalität unbekannt.";
+    out.warning = true;
+    return out;
+  }
+
+  function updateButtons() {
+    toStep2.disabled = !modality.value;
+    toStep3.disabled = !(modality.value && site.value);
+    compute.disabled = !(modality.value && site.value && acqDate.value && acqTime.value);
+  }
+
+  modality.addEventListener("change", () => {
+    hide(resultBox);
+    show(step2);
+    hide(step3);
+    site.value = "";
+    acqDate.value = "";
+    acqTime.value = "";
+    updateButtons();
+  });
+
+  site.addEventListener("change", () => {
+    hide(resultBox);
+    show(step3);
+    updateButtons();
+  });
+
+  acqDate.addEventListener("input", () => { hide(resultBox); updateButtons(); });
+  acqTime.addEventListener("input", () => { hide(resultBox); updateButtons(); });
+
+  toStep2.addEventListener("click", () => { show(step2); });
+  toStep3.addEventListener("click", () => { show(step3); });
+  $("back1").addEventListener("click", () => { hide(step2); hide(step3); hide(resultBox); });
+  $("back2").addEventListener("click", () => { hide(step3); hide(resultBox); });
+
+  compute.addEventListener("click", () => {
+    const dt = parseDateTime(acqDate.value, acqTime.value);
+    const out = route(modality.value, site.value, dt);
+
+    resultBox.classList.toggle("warn", !!out.warning);
+    resultTitle.textContent = "Zuständig: " + out.who;
+    resultDetails.innerHTML =
+      `<div><span class="mono">${modality.value}</span>, Standort <span class="mono">${site.value}</span>, ` +
+      `Akquisition <span class="mono">${acqDate.value} ${acqTime.value}</span> (${fmtDow(dt)})</div>` +
+      `<div style="margin-top:6px;">${out.detail}</div>`;
+    resultNotes.textContent = out.note || "";
+    show(resultBox);
+  });
+
+  $("reset").addEventListener("click", resetAll);
+
+  resetAll();
+})();
+</script>
+</body>
+</html>
