@@ -1,359 +1,549 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Radiologie Zuständigkeit (CT/MR, BD/USB)</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neuroradiologie Task Finder</title>
   <style>
-    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    body { margin: 0; background:#f6f7f9; color:#111; }
-    .wrap { max-width: 880px; margin: 24px auto; padding: 0 16px; }
-    .card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:18px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
-    h1 { font-size: 18px; margin: 0 0 10px; }
-    .muted { color:#555; font-size: 13px; line-height: 1.35; }
-    .step { margin-top: 14px; padding-top: 14px; border-top: 1px solid #eee; }
-    .row { display:flex; gap:12px; flex-wrap: wrap; align-items: end; }
-    label { display:block; font-size: 13px; color:#222; margin-bottom: 6px; }
-    select, input[type="date"], input[type="time"] {
-      width: 260px; max-width: 100%;
-      padding: 10px 12px; border-radius: 10px;
-      border: 1px solid #d1d5db; background:#fff; font-size: 14px;
+    :root {
+      --bg1: #0f172a;
+      --bg2: #1e293b;
+      --panel: rgba(255, 255, 255, 0.12);
+      --panel-strong: rgba(255, 255, 255, 0.18);
+      --border: rgba(255, 255, 255, 0.22);
+      --text: #eef2ff;
+      --muted: #cbd5e1;
+      --accent: #8b5cf6;
+      --accent-2: #22c55e;
+      --warning: #f59e0b;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+      --radius: 24px;
     }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: "Inter", "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.20), transparent 30%),
+        radial-gradient(circle at 80% 30%, rgba(34, 197, 94, 0.14), transparent 28%),
+        radial-gradient(circle at 50% 85%, rgba(59, 130, 246, 0.16), transparent 30%),
+        linear-gradient(135deg, var(--bg1), var(--bg2));
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.18;
+      background-image: url("data:image/svg+xml;utf8,\
+      <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1000'>\
+        <g fill='none' stroke='%23ffffff' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'>\
+          <path d='M320,280 C250,210 150,230 120,320 C95,395 135,470 210,495 C185,575 235,650 325,660 C385,720 490,720 560,665 C630,705 730,690 775,610 C850,580 895,500 875,420 C935,345 910,240 810,220 C760,150 655,145 595,190 C530,145 410,155 360,225 C338,240 326,258 320,280 Z'/>\
+          <path d='M594,190 C585,245 590,300 605,355 C615,392 620,435 613,486 C607,530 615,575 640,615 C662,650 700,677 775,690'/>\
+          <path d='M360,225 C410,260 456,305 482,360 C505,410 510,468 490,522 C470,575 465,620 560,665'/>\
+          <path d='M220,350 C300,325 358,345 402,390'/>\
+          <path d='M190,430 C280,408 360,430 430,490'/>\
+          <path d='M235,525 C320,515 395,540 455,592'/>\
+          <path d='M690,255 C760,255 816,280 852,340'/>\
+          <path d='M658,345 C740,342 815,372 855,432'/>\
+          <path d='M648,445 C730,452 788,482 825,530'/>\
+          <path d='M690,560 C740,580 775,610 798,655'/>\
+        </g>\
+      </svg>");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 1100px auto;
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 48px 20px 64px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .hero h1 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+
+    .hero p {
+      margin: 0 auto;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 1.02rem;
+      line-height: 1.6;
+    }
+
+    .card {
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .form-panel,
+    .result-panel {
+      padding: 28px;
+    }
+
+    .section-title {
+      font-size: 1.15rem;
+      margin: 0 0 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    select,
+    input[type="datetime-local"] {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(10, 15, 28, 0.46);
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      transition: 0.2s ease;
+    }
+
+    select:focus,
+    input[type="datetime-local"]:focus {
+      border-color: rgba(139, 92, 246, 0.65);
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.16);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
     button {
-      padding: 10px 14px; border: 0; border-radius: 10px;
-      background:#111827; color:#fff; font-size: 14px; cursor:pointer;
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 14px 20px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
     }
-    button.secondary { background:#6b7280; }
-    button:disabled { opacity:.6; cursor:not-allowed; }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .primary {
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
+      color: white;
+      box-shadow: 0 10px 24px rgba(99, 102, 241, 0.28);
+    }
+
+    .secondary {
+      background: rgba(255, 255, 255, 0.10);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .result-shell {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 18px;
+    }
+
     .pill {
-      display:inline-block; padding: 6px 10px; border-radius: 999px;
-      background:#eef2ff; color:#1f2a7a; font-weight: 700; font-size: 13px;
-      border: 1px solid #dbe3ff;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 9px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: var(--muted);
     }
-    .resultBox {
-      margin-top: 14px; padding: 14px; border-radius: 12px;
-      border: 1px solid #e5e7eb; background:#fafafa;
+
+    .answer {
+      background: var(--panel-strong);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 22px;
+      padding: 22px;
     }
-    .resultTitle { font-weight: 800; font-size: 16px; margin: 0 0 6px; }
-    .warn { color:#7c2d12; background:#fff7ed; border-color:#fed7aa; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
-    .small { font-size: 12px; color:#444; }
-    ul { margin: 8px 0 0 18px; }
-    .hidden { display:none; }
+
+    .answer h2 {
+      margin: 0 0 10px;
+      font-size: 1.7rem;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+    }
+
+    .answer .task {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 10px;
+      letter-spacing: -0.03em;
+    }
+
+    .meta {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .meta-item {
+      background: rgba(10, 15, 28, 0.36);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 14px 16px;
+    }
+
+    .meta-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .meta-value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.55;
+      background: rgba(255,255,255,0.07);
+      border-left: 4px solid var(--warning);
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+
+    .foot {
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .small {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .result-panel {
+        padding-top: 0;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="card">
-      <h1>Wer ist zuständig für Rücksprache zum Befund?</h1>
-      <div class="muted">
-        Schrittweise Auswahl: Modalität → Standort → Akquisitionsdatum und -zeit.<br>
-        Ergebnis: <span class="pill">CT-OA</span> / <span class="pill">MR-Früh</span> / <span class="pill">MR-Spät</span> / <span class="pill">Konsil-Arzt</span> / <span class="pill">DNR-WE</span>
+    <div class="hero">
+      <h1>Neuroradiologie Task Finder</h1>
+      <p>
+        Select modality, location, and the exam end time. The tool returns the responsible neuroradiologist task and the relevant task date, including overnight assignments that belong to the previous day.
+      </p>
+    </div>
+
+    <div class="grid">
+      <div class="card form-panel">
+        <h2 class="section-title">Abfrage</h2>
+
+        <div class="field">
+          <label for="modality">1. Modality</label>
+          <select id="modality">
+            <option value="CT">CT</option>
+            <option value="MRI">MRI</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="location">2. Location</label>
+          <select id="location"></select>
+        </div>
+
+        <div class="field">
+          <label for="examTime">3. End exam date and time</label>
+          <input id="examTime" type="datetime-local" />
+        </div>
+
+        <div class="btn-row">
+          <button class="primary" onclick="findResponsible()">Find responsible task</button>
+          <button class="secondary" onclick="resetForm()">Reset</button>
+        </div>
+
+        <p class="small" style="margin-top:18px;">
+          Logic included:
+          CT daytime and night coverage, MRI-USB early and late shift, MRI-USB overnight Konsil-Arzt, and MRI-BD NOX morning plus Konsil-Arzt cross-day coverage.
+        </p>
       </div>
 
-      <div class="step" id="step1">
-        <div class="row">
-          <div>
-            <label for="modality">1) Modalität</label>
-            <select id="modality">
-              <option value="" selected disabled>Bitte auswählen…</option>
-              <option value="CT">CT</option>
-              <option value="MR">MR</option>
-            </select>
-          </div>
-          <div style="flex:1"></div>
-          <button id="toStep2" disabled>Weiter</button>
-        </div>
-      </div>
+      <div class="card result-panel">
+        <div class="result-shell">
+          <span class="pill">Result</span>
 
-      <div class="step hidden" id="step2">
-        <div class="row">
-          <div>
-            <label for="site">2) Standort (Akquisition)</label>
-            <select id="site">
-              <option value="" selected disabled>Bitte auswählen…</option>
-              <option value="BD">BD</option>
-              <option value="USB">USB</option>
-            </select>
-          </div>
-          <div style="flex:1"></div>
-          <button id="toStep3" disabled>Weiter</button>
-          <button class="secondary" id="back1">Zurück</button>
-        </div>
-      </div>
+          <div class="answer" id="answerBox">
+            <h2>Responsible neuroradiologist</h2>
+            <div class="task" id="taskName">Waiting for input</div>
 
-      <div class="step hidden" id="step3">
-        <div class="row">
-          <div>
-            <label for="acqDate">3) Akquisitionsdatum</label>
-            <input id="acqDate" type="date" />
+            <div class="meta">
+              <div class="meta-item">
+                <div class="meta-label">Task date</div>
+                <div class="meta-value" id="taskDate">-</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Explanation</div>
+                <div class="meta-value" id="taskExplain">Select values and run the query.</div>
+              </div>
+            </div>
           </div>
-          <div>
-            <label for="acqTime">4) Akquisitionsende</label>
-            <input id="acqTime" type="time" step="60" />
+
+          <div class="note" id="noteBox">
+            Overnight work is assigned to the previous day's task where applicable. For example, a study ending in the early morning may belong to the prior day's NOX or Konsil-Arzt block.
           </div>
-          <div style="flex:1"></div>
-          <button id="compute" disabled>Ergebnis anzeigen</button>
-          <button class="secondary" id="back2">Zurück</button>
-        </div>
-
-        <div class="resultBox hidden" id="resultBox">
-          <div class="resultTitle" id="resultTitle"></div>
-          <div class="small" id="resultDetails"></div>
-          <div class="small" id="resultNotes"></div>
-        </div>
-      </div>
-
-      <div class="step">
-        <div class="row">
-          <button class="secondary" id="reset">Neu starten</button>
-        </div>
-        <div class="muted small" style="margin-top:10px;">
-          Implementierte Regeln:
-          <ul>
-            <li><span class="mono">CT</span>: Fr 16:31 bis So 16:00 = <span class="mono">DNR-WE</span>.</li>
-            <li><span class="mono">CT</span>: sonst CT-OA für 20:00–07:00 sowie 07:00–16:30. CT-Freigabe Spätdienst-Vortag 16:31–19:59 durch MR-Früh (Mo: Sonntagsfenster 16:00–19:59).</li>
-            <li><span class="mono">MR USB</span>: MR-Früh 06:45–12:30, MR-Spät 12:31–17:29, danach Konsil-Arzt (ab 17:30 bzw. vor 06:45).</li>
-            <li><span class="mono">MR BD</span>: MR-Spät 07:00–13:59, danach Konsil-Arzt (ab 14:00 bzw. vor 07:00).</li>
-            <li><span class="mono">Wochenende</span>: MR am Samstag wird als Konsil-Arzt geroutet.</li>
-          </ul>
         </div>
       </div>
     </div>
+
+    <div class="foot">
+      Save this file as <strong>index.html</strong> and open it in any browser.
+    </div>
   </div>
 
-<script>
-(function() {
-  const $ = (id) => document.getElementById(id);
+  <script>
+    const modalityEl = document.getElementById("modality");
+    const locationEl = document.getElementById("location");
+    const examTimeEl = document.getElementById("examTime");
 
-  const modality = $("modality");
-  const site = $("site");
-  const acqDate = $("acqDate");
-  const acqTime = $("acqTime");
+    const taskNameEl = document.getElementById("taskName");
+    const taskDateEl = document.getElementById("taskDate");
+    const taskExplainEl = document.getElementById("taskExplain");
+    const noteBoxEl = document.getElementById("noteBox");
 
-  const toStep2 = $("toStep2");
-  const toStep3 = $("toStep3");
-  const compute = $("compute");
+    const LOCATIONS = {
+      CT: ["USB", "BD", "FSP"],
+      MRI: ["USB", "BD"]
+    };
 
-  const step2 = $("step2");
-  const step3 = $("step3");
+    function populateLocations() {
+      const modality = modalityEl.value;
+      const locations = LOCATIONS[modality];
+      locationEl.innerHTML = "";
 
-  const resultBox = $("resultBox");
-  const resultTitle = $("resultTitle");
-  const resultDetails = $("resultDetails");
-  const resultNotes = $("resultNotes");
-
-  function show(el) { el.classList.remove("hidden"); }
-  function hide(el) { el.classList.add("hidden"); }
-
-  function resetAll() {
-    modality.value = "";
-    site.value = "";
-    acqDate.value = "";
-    acqTime.value = "";
-    toStep2.disabled = true;
-    toStep3.disabled = true;
-    compute.disabled = true;
-    hide(step2);
-    hide(step3);
-    hide(resultBox);
-    resultBox.classList.remove("warn");
-  }
-
-  function toMin(hhmm) {
-    const [h, m] = hhmm.split(":").map(Number);
-    return h * 60 + m;
-  }
-  function fmtDow(d) {
-    const names = ["So","Mo","Di","Mi","Do","Fr","Sa"];
-    return names[d.getDay()];
-  }
-  function parseDateTime(dateStr, timeStr) {
-    const [y, m, d] = dateStr.split("-").map(Number);
-    const [hh, mm] = timeStr.split(":").map(Number);
-    return new Date(y, m - 1, d, hh, mm, 0, 0);
-  }
-
-  // Weekend CT override window: Fri 16:31 -> Sun 16:00
-  function isCTWeekendWindow(dt) {
-    const dow = dt.getDay(); // 0=Sun ... 6=Sat
-    const t = dt.getHours() * 60 + dt.getMinutes();
-    const startFri = toMin("16:31");
-    const endSun = toMin("16:00");
-    if (dow === 5 && t >= startFri) return true; // Friday from 16:31
-    if (dow === 6) return true;                  // all Saturday
-    if (dow === 0 && t < endSun) return true;    // Sunday until 16:00 (exclusive)
-    return false;
-  }
-
-  function route(mod, loc, dt) {
-    const dow = dt.getDay();
-    const t = dt.getHours() * 60 + dt.getMinutes();
-
-    const CT_NIGHT_START = toMin("20:00");
-    const CT_NIGHT_END = toMin("07:00");
-    const CT_DAY_START = toMin("07:00");
-    const CT_DAY_END = toMin("16:30");
-    const CT_LATE_START = toMin("16:31");
-    const CT_LATE_END = toMin("19:59");
-    const CT_SUN_LATE_START = toMin("16:00");
-    const CT_SUN_LATE_END = toMin("19:59");
-
-    const MR_USB_EARLY_START = toMin("06:45");
-    const MR_USB_EARLY_END = toMin("12:30");
-    const MR_USB_LATE_START = toMin("12:31");
-    const MR_USB_LATE_END = toMin("17:29");
-    const MR_USB_KONSIL_START = toMin("17:30");
-
-    const MR_BD_SPAT_START = toMin("07:00");
-    const MR_BD_SPAT_END = toMin("13:59");
-    const MR_BD_KONSIL_START = toMin("14:00");
-
-    const out = { who: "", detail: "", note: "", warning: false };
-
-    if (mod === "CT") {
-      // Override first
-      if (isCTWeekendWindow(dt)) {
-        out.who = "DNR-WE";
-        out.detail = "CT-Zuständigkeit Fr 16:31 bis So 16:00.";
-        return out;
-      }
-
-      if (t >= CT_NIGHT_START || t <= CT_NIGHT_END) {
-        out.who = "CT-OA";
-        out.detail = "CT-Nachtfreigabe (20:00–07:00).";
-        return out;
-      }
-      if (t >= CT_DAY_START && t <= CT_DAY_END) {
-        out.who = "CT-OA";
-        out.detail = "CT Tagesgeschäft (07:00–16:30).";
-        return out;
-      }
-
-      // Sunday special after 16:00 (note: before 16:00 already handled by DNR-WE)
-      if (dow === 0 && t >= CT_SUN_LATE_START && t <= CT_SUN_LATE_END) {
-        out.who = "MR-Früh";
-        out.detail = "CT-Freigabe Sonntag 16:00–19:59 (für Montag MR-Früh).";
-        return out;
-      }
-
-      if (t >= CT_LATE_START && t <= CT_LATE_END) {
-        // Apply for Mon-Thu acquisitions (next day is Tue-Fri).
-        if (dow >= 1 && dow <= 4) {
-          out.who = "MR-Früh";
-          out.detail = "CT-Freigabe Spätdienst Vortag (16:31–19:59) durch MR-Früh am Folgetag.";
-          return out;
-        }
-        out.who = "Unklar";
-        out.detail = "CT 16:31–19:59 ist für diesen Wochentag nicht eindeutig geregelt (außer Fr->So via DNR-WE).";
-        out.warning = true;
-        return out;
-      }
-
-      out.who = "Unklar";
-      out.detail = "Zeitfenster für CT passt zu keiner Regel (bitte prüfen).";
-      out.warning = true;
-      return out;
+      locations.forEach(loc => {
+        const opt = document.createElement("option");
+        opt.value = loc;
+        opt.textContent = loc;
+        locationEl.appendChild(opt);
+      });
     }
 
-    if (mod === "MR") {
-      if (dow === 6) {
-        out.who = "Konsil-Arzt";
-        out.detail = "MRI Samstag (laut Regel).";
-        return out;
-      }
+    modalityEl.addEventListener("change", populateLocations);
+    populateLocations();
 
-      if (loc === "USB") {
-        if (t >= MR_USB_EARLY_START && t <= MR_USB_EARLY_END) {
-          out.who = "MR-Früh";
-          out.detail = "MRI USB 06:45–12:30.";
-          return out;
-        }
-        if (t >= MR_USB_LATE_START && t <= MR_USB_LATE_END) {
-          out.who = "MR-Spät";
-          out.detail = "MRI USB 12:31–17:29.";
-          return out;
-        }
-        if (t >= MR_USB_KONSIL_START || t < MR_USB_EARLY_START) {
-          out.who = "Konsil-Arzt";
-          out.detail = "MRI USB ab 17:30 (Vortag) bzw. vor 06:45.";
-          return out;
-        }
-      }
-
-      if (loc === "BD") {
-        if (t >= MR_BD_SPAT_START && t <= MR_BD_SPAT_END) {
-          out.who = "MR-Spät";
-          out.detail = "MRI BD 07:00–13:59.";
-          return out;
-        }
-        if (t >= MR_BD_KONSIL_START || t < MR_BD_SPAT_START) {
-          out.who = "Konsil-Arzt";
-          out.detail = "MRI BD ab 14:00 (Vortag) bzw. vor 07:00.";
-          return out;
-        }
-      }
-
-      out.who = "Unklar";
-      out.detail = "Zeitfenster für MR passt zu keiner Regel (bitte prüfen).";
-      out.warning = true;
-      return out;
+    function resetForm() {
+      modalityEl.value = "CT";
+      populateLocations();
+      examTimeEl.value = "";
+      taskNameEl.textContent = "Waiting for input";
+      taskDateEl.textContent = "-";
+      taskExplainEl.textContent = "Select values and run the query.";
+      noteBoxEl.textContent = "Overnight work is assigned to the previous day's task where applicable. For example, a study ending in the early morning may belong to the prior day's NOX or Konsil-Arzt block.";
     }
 
-    out.who = "Unklar";
-    out.detail = "Modalität unbekannt.";
-    out.warning = true;
-    return out;
-  }
+    function formatDate(date) {
+      return new Intl.DateTimeFormat("de-CH", {
+        weekday: "long",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).format(date);
+    }
 
-  function updateButtons() {
-    toStep2.disabled = !modality.value;
-    toStep3.disabled = !(modality.value && site.value);
-    compute.disabled = !(modality.value && site.value && acqDate.value && acqTime.value);
-  }
+    function minutesOfDay(date) {
+      return date.getHours() * 60 + date.getMinutes();
+    }
 
-  modality.addEventListener("change", () => {
-    hide(resultBox);
-    show(step2);
-    hide(step3);
-    site.value = "";
-    acqDate.value = "";
-    acqTime.value = "";
-    updateButtons();
-  });
+    function atOrAfter(current, h, m) {
+      return current >= (h * 60 + m);
+    }
 
-  site.addEventListener("change", () => {
-    hide(resultBox);
-    show(step3);
-    updateButtons();
-  });
+    function atOrBefore(current, h, m) {
+      return current <= (h * 60 + m);
+    }
 
-  acqDate.addEventListener("input", () => { hide(resultBox); updateButtons(); });
-  acqTime.addEventListener("input", () => { hide(resultBox); updateButtons(); });
+    function inRange(current, startH, startM, endH, endM) {
+      const start = startH * 60 + startM;
+      const end = endH * 60 + endM;
+      return current >= start && current <= end;
+    }
 
-  toStep2.addEventListener("click", () => { show(step2); });
-  toStep3.addEventListener("click", () => { show(step3); });
-  $("back1").addEventListener("click", () => { hide(step2); hide(step3); hide(resultBox); });
-  $("back2").addEventListener("click", () => { hide(step3); hide(resultBox); });
+    function shiftDate(date, days) {
+      const d = new Date(date);
+      d.setDate(d.getDate() + days);
+      return d;
+    }
 
-  compute.addEventListener("click", () => {
-    const dt = parseDateTime(acqDate.value, acqTime.value);
-    const out = route(modality.value, site.value, dt);
+    function getWeekdayName(date) {
+      return new Intl.DateTimeFormat("de-CH", { weekday: "long" }).format(date);
+    }
 
-    resultBox.classList.toggle("warn", !!out.warning);
-    resultTitle.textContent = "Zuständig: " + out.who;
-    resultDetails.innerHTML =
-      `<div><span class="mono">${modality.value}</span>, Standort <span class="mono">${site.value}</span>, ` +
-      `Akquisition <span class="mono">${acqDate.value} ${acqTime.value}</span> (${fmtDow(dt)})</div>` +
-      `<div style="margin-top:6px;">${out.detail}</div>`;
-    resultNotes.textContent = out.note || "";
-    show(resultBox);
-  });
+    function determineTask(modality, location, dt) {
+      const current = minutesOfDay(dt);
+      let task = "";
+      let taskDate = new Date(dt);
+      let explanation = "";
+      let note = "";
 
-  $("reset").addEventListener("click", resetAll);
+      if (modality === "CT") {
+        if (inRange(current, 7, 0, 16, 30)) {
+          task = "CT-OA";
+          explanation = `${location} CT from 07:00 to 16:30`;
+          note = "Daytime CT coverage.";
+        } else if (atOrAfter(current, 16, 31)) {
+          task = "NOX";
+          explanation = `${location} CT from 16:31 onward belongs to the same day NOX block`;
+          note = "This exam is assigned to the current day's NOX task.";
+        } else {
+          task = "NOX";
+          taskDate = shiftDate(dt, -1);
+          explanation = `${location} CT before 07:00 belongs to the previous day's NOX block`;
+          note = "This exam falls into an overnight CT assignment, so the task date is the previous day.";
+        }
+      }
 
-  resetAll();
-})();
-</script>
+      if (modality === "MRI" && location === "USB") {
+        if (inRange(current, 6, 45, 12, 30)) {
+          task = "MR-Früh";
+          explanation = "MRI-USB from 06:45 to 12:30";
+          note = "Morning MRI-USB responsibility.";
+        } else if (inRange(current, 12, 31, 17, 29)) {
+          task = "MR-Spät";
+          explanation = "MRI-USB from 12:31 to 17:29";
+          note = "Late MRI-USB responsibility.";
+        } else if (atOrAfter(current, 17, 30)) {
+          task = "Konsil-Arzt";
+          explanation = "MRI-USB from 17:30 onward belongs to the same day's Konsil-Arzt block";
+          note = "This exam is assigned to the current day's evening/night Konsil-Arzt.";
+        } else {
+          task = "Konsil-Arzt";
+          taskDate = shiftDate(dt, -1);
+          explanation = "MRI-USB before 06:45 belongs to the previous day's Konsil-Arzt block";
+          note = "This exam falls into an overnight MRI-USB assignment, so the task date is the previous day.";
+          if (dt.getDay() === 1) {
+            note += " Monday morning may require extra operational attention because the schedule notes a Saturday-to-Monday MRI handling remark.";
+          }
+        }
+      }
+
+      if (modality === "MRI" && location === "BD") {
+        if (inRange(current, 7, 1, 12, 59)) {
+          task = "NOX";
+          explanation = "MRI-BD from 07:01 to 12:59";
+          note = "Morning MRI-BD responsibility is assigned to NOX.";
+        } else if (atOrAfter(current, 13, 0)) {
+          task = "Konsil-Arzt";
+          explanation = "MRI-BD from 13:00 onward belongs to the same day's Konsil-Arzt block";
+          note = "This exam is assigned to the current day's Konsil-Arzt.";
+        } else {
+          task = "Konsil-Arzt";
+          taskDate = shiftDate(dt, -1);
+          explanation = "MRI-BD up to 07:00 belongs to the previous day's Konsil-Arzt block";
+          note = "This exam falls into an overnight MRI-BD assignment, so the task date is the previous day.";
+        }
+      }
+
+      return {
+        task,
+        taskDate,
+        explanation,
+        note
+      };
+    }
+
+    function findResponsible() {
+      const modality = modalityEl.value;
+      const location = locationEl.value;
+      const inputValue = examTimeEl.value;
+
+      if (!inputValue) {
+        taskNameEl.textContent = "Missing input";
+        taskDateEl.textContent = "-";
+        taskExplainEl.textContent = "Please select the exam end date and time.";
+        noteBoxEl.textContent = "A valid date-time is required.";
+        return;
+      }
+
+      const dt = new Date(inputValue);
+      if (isNaN(dt.getTime())) {
+        taskNameEl.textContent = "Invalid date";
+        taskDateEl.textContent = "-";
+        taskExplainEl.textContent = "The selected date-time could not be read.";
+        noteBoxEl.textContent = "Please enter a valid date-time.";
+        return;
+      }
+
+      const result = determineTask(modality, location, dt);
+
+      taskNameEl.textContent = result.task || "No rule found";
+      taskDateEl.textContent = formatDate(result.taskDate);
+      taskExplainEl.textContent = `${modality} | ${location} | ${result.explanation}`;
+      noteBoxEl.textContent = result.note || "No extra note.";
+    }
+  </script>
 </body>
 </html>
