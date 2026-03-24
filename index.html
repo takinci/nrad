@@ -455,9 +455,10 @@
           explanation = `${location} CT from 07:00 to 16:30`;
           note = "Daytime CT coverage.";
         } else if (inRange(current, 16, 31, 17, 30)) {
-          task = "Konsil-Arzt";
-          explanation = `${location} CT from 16:31 to 17:30 belongs to current day Konsil-Arzt`;
-          note = "This exam is assigned to the current day's Konsil-Arzt block.";
+          task = "NOX";
+          taskDate = shiftDate(dt, 1);
+          explanation = `${location} CT from 16:31 to 17:30 belongs to the following day's NOX block`;
+          note = "Ansprechpartner for this exam is Konsil-Arzt.";
         } else if (atOrAfter(current, 17, 31)) {
           task = "NOX";
           taskDate = shiftDate(dt, 1);
@@ -465,9 +466,8 @@
           note = "This exam is assigned to the next day's NOX task.";
         } else {
           task = "NOX";
-          taskDate = shiftDate(dt, -1);
-          explanation = `${location} CT before 07:00 belongs to the previous day's NOX block`;
-          note = "This exam falls into an overnight CT assignment, so the task date is the previous day.";
+          explanation = `${location} CT before 07:00 belongs to the current day's NOX block`;
+          note = "This exam falls into the overnight CT window and is assigned to the current day's NOX task.";
         }
       }
 
