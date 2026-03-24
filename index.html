@@ -454,10 +454,15 @@
           task = "CT-OA";
           explanation = `${location} CT from 07:00 to 16:30`;
           note = "Daytime CT coverage.";
-        } else if (atOrAfter(current, 16, 31)) {
+        } else if (inRange(current, 16, 31, 17, 30)) {
+          task = "Konsil-Arzt";
+          explanation = `${location} CT from 16:31 to 17:30 belongs to current day Konsil-Arzt`;
+          note = "This exam is assigned to the current day's Konsil-Arzt block.";
+        } else if (atOrAfter(current, 17, 31)) {
           task = "NOX";
-          explanation = `${location} CT from 16:31 onward belongs to the same day NOX block`;
-          note = "This exam is assigned to the current day's NOX task.";
+          taskDate = shiftDate(dt, 1);
+          explanation = `${location} CT from 17:31 onward belongs to the following day's NOX block`;
+          note = "This exam is assigned to the next day's NOX task.";
         } else {
           task = "NOX";
           taskDate = shiftDate(dt, -1);
