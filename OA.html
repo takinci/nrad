@@ -482,13 +482,13 @@
           note = "Late MRI-USB responsibility.";
         } else if (atOrAfter(current, 17, 30)) {
           task = "Konsil-Arzt";
-          explanation = "MRI-USB from 17:30 onward belongs to the same day's Konsil-Arzt block";
-          note = "This exam is assigned to the current day's evening/night Konsil-Arzt.";
+          explanation = "MRI-USB from 17:30 onward belongs to the following day's Konsil-Arzt block";
+          note = "This exam is assigned to the following day's evening/night Konsil-Arzt.";
         } else {
           task = "Konsil-Arzt";
           taskDate = shiftDate(dt, -1);
-          explanation = "MRI-USB before 06:45 belongs to the previous day's Konsil-Arzt block";
-          note = "This exam falls into an overnight MRI-USB assignment, so the task date is the previous day.";
+          explanation = "MRI-USB before 06:45 belongs to the current day's Konsil-Arzt block";
+          note = "This exam falls into an overnight MRI-USB assignment, so the task date is the current day.";
           if (dt.getDay() === 1) {
             note += " Monday morning may require extra operational attention because the schedule notes a Saturday-to-Monday MRI handling remark.";
           }
@@ -507,7 +507,7 @@
         } else {
           task = "Konsil-Arzt";
           taskDate = shiftDate(dt, -1);
-          explanation = "MRI-BD up to 07:00 belongs to the previous day's Konsil-Arzt block";
+          explanation = "MRI-BD up to 07:00 belongs to the current day's Konsil-Arzt block";
           note = "This exam falls into an overnight MRI-BD assignment, so the task date is the previous day.";
         }
       }
