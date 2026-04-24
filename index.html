@@ -328,7 +328,7 @@
 
         <p class="small" style="margin-top:18px;">
           Logic included:
-          CT daytime and night coverage, MRI-USB early and late shift, MRI-USB overnight Konsil-Arzt, and MRI-BD NOX morning plus Konsil-Arzt cross-day coverage.
+          CT daytime and night coverage, MRI-USB early and late shift, MRI-USB overnight Konsil-Arzt, MRI-BD NOX morning plus Konsil-Arzt cross-day coverage. Weekend rules: CT from Friday 16:30 to Sunday 16:00 → Wochenenddienst-OA; MRI from Friday 17:30 and all Saturday → Konsil-Arzt of the following Monday.
         </p>
       </div>
 
@@ -444,12 +444,36 @@
 
     function determineTask(modality, location, dt) {
       const current = minutesOfDay(dt);
+      const day = dt.getDay(); // 0=Sun, 1=Mon, …, 5=Fri, 6=Sat
       let task = "";
       let taskDate = new Date(dt);
       let explanation = "";
       let note = "";
 
-      if (modality === "CT") {
+      // Weekend CT: Friday ≥ 16:30, all Saturday, Sunday ≤ 16:00 → Wochenenddienst-OA
+      const isWeekendCT = modality === "CT" && (
+        (day === 5 && atOrAfter(current, 16, 30)) ||
+        day === 6 ||
+        (day === 0 && atOrBefore(current, 16, 0))
+      );
+
+      // Weekend MRI: Friday ≥ 17:30, all Saturday → Konsil-Arzt of the following Monday
+      const isWeekendMRI = modality === "MRI" && (
+        (day === 5 && atOrAfter(current, 17, 30)) ||
+        day === 6
+      );
+
+      if (isWeekendCT) {
+        task = "Wochenenddienst-OA";
+        explanation = `${location} CT – Wochenenddienst (Friday 16:30 – Sunday 16:00)`;
+        note = "Weekend CT coverage: from Friday 16:30 until Sunday 16:00 is the responsibility of the weekend shift OA (Wochenenddienst-OA).";
+      } else if (isWeekendMRI) {
+        task = "Konsil-Arzt";
+        const daysToMonday = day === 5 ? 3 : 2; // Fri+3=Mon, Sat+2=Mon
+        taskDate = shiftDate(dt, daysToMonday);
+        explanation = `${location} MRI – Weekend (Friday 17:30 / Saturday all day) → Konsil-Arzt of the following Monday`;
+        note = "Weekend MRI belongs to the Konsil-Arzt block of the following Monday.";
+      } else if (modality === "CT") {
         if (inRange(current, 7, 0, 16, 30)) {
           task = "CT-OA";
           explanation = `${location} CT from 07:00 to 16:30`;
@@ -469,9 +493,7 @@
           explanation = `${location} CT before 07:00 belongs to the current day's NOX block`;
           note = "This exam falls into the overnight CT window and is assigned to the following day's NOX task.";
         }
-      }
-
-      if (modality === "MRI" && location === "USB") {
+      } else if (modality === "MRI" && location === "USB") {
         if (inRange(current, 6, 45, 12, 30)) {
           task = "MR-Früh";
           explanation = "MRI-USB from 06:45 to 12:30";
@@ -493,9 +515,7 @@
             note += " Monday morning may require extra operational attention because the schedule notes a Saturday-to-Monday MRI handling remark.";
           }
         }
-      }
-
-      if (modality === "MRI" && location === "BD") {
+      } else if (modality === "MRI" && location === "BD") {
         if (inRange(current, 7, 1, 12, 59)) {
           task = "NOX";
           explanation = "MRI-BD from 07:01 to 12:59";
