@@ -508,7 +508,7 @@
           note = "This exam is assigned to the following day's evening/night Konsil-Arzt.";
         } else {
           task = "Konsil-Arzt";
-          taskDate = shiftDate(dt, +1);
+          taskDate = shiftDate(dt, 1);
           explanation = "MRI-USB from midnight until 06:45 belongs to the current day's Konsil-Arzt block";
           note = "This exam falls into an overnight MRI-USB assignment, so the task date is the current day.";
           if (dt.getDay() === 1) {
@@ -526,7 +526,7 @@
           note = "This exam is assigned to the following day's Konsil-Arzt.";
         } else {
           task = "Konsil-Arzt";
-          taskDate = shiftDate(dt, +1);
+          taskDate = shiftDate(dt, 1);
           explanation = "MRI-BD from midnight up to 07:00 belongs to the same day's Konsil-Arzt block";
           note = "This exam falls into an overnight MRI-BD assignment, so the task date is the same day.";
         }
